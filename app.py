@@ -7,8 +7,6 @@ from json import loads, dumps
 from urllib3 import HTTPSConnectionPool, disable_warnings
 from urlparse import parse_qs
 
-import requests
-
 import logging
 import flask
 
@@ -162,11 +160,31 @@ def get_posts():
         logging.log(logging.ERROR, str(e))
         return 'Unknown error calling Graph API', 502
 
-    posts = loads(response.data.decode("utf-8"))
+    """
+    Response format:
+    {
+        "paging" : {
+            "next" : "https://graph.facebook.com/v2.8/12......."
+            "previous" : "https://graph.facebook.com/v2.8/..."
+        }
+        "data" : [
+                    {"created_time" : "...", "message" : "Chilling...", "story" : "Patrick Doyle at Carowinds.", "id" : "..."},
+                    {....},
+                    {....}
+                ]
+    }
+    """
 
-    [post_action(post=post) for post in posts['data']]
+    #Get user posts from response which fetches posts upto specified limit
+    posts = loads(response.data.decode("utf-8"))["data"]
 
-    return flask.render_template("posts.html", posts=posts)
+    #[post_action(post=post) for post in posts['data']]
+
+    #Convert json to string & indent for pretty printing
+    posts_prettified = dumps(posts, indent=4, separators=(',', ': '))
+    #print (dumps(posts,sort_keys=True, indent=4, separators=(',', ': ')))
+
+    return flask.render_template("posts.html", posts=posts_prettified)
 
 if __name__ == '__main__':
     # Register an app token at start-up (purely as validation that configuration for Facebook is correct)
